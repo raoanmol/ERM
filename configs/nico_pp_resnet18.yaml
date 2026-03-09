@@ -5,7 +5,7 @@ data:
   dataset: "nico_pp"
   data_root: "data/nico_pp"
   batch_size: 64
-  num_val_samples_per_class: 50
+  num_val_samples_per_class: 37
   num_workers: 4
   image_size: 224
 

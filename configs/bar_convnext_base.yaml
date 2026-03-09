@@ -5,7 +5,7 @@ data:
   dataset: "bar"
   data_root: "data/bar"
   batch_size: 64
-  num_val_samples_per_class: 50
+  num_val_samples_per_class: 11
   num_workers: 4
   image_size: 224
 

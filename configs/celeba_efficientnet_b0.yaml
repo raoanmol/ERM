@@ -5,7 +5,7 @@ data:
   dataset: "celeba"
   data_root: "data/celeba"
   batch_size: 64
-  num_val_samples_per_class: 50
+  num_val_samples_per_class: 1495
   num_workers: 4
   image_size: 224
   target_attr: "Male"
