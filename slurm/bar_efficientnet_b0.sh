@@ -3,7 +3,7 @@
 #SBATCH -G a30:1
 #SBATCH -c 12
 #SBATCH --mem 48G
-#SBATCH -p general
+#SBATCH -p htc
 #SBATCH -t 0-01:30:00
 
 module purge
@@ -13,7 +13,6 @@ source activate erm_venv
 SEEDS=(40 41 42 43 44)
 
 cd ../
-pip install -r requirements.txt
 
 echo "=========================================="
 echo "Running EfficientNet-B0 on BAR experiments"

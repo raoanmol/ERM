@@ -3,8 +3,9 @@
 #SBATCH -G a100:1
 #SBATCH -c 18
 #SBATCH --mem 96G
-#SBATCH -p general
+#SBATCH --partition=public
 #SBATCH -t 0-09:00:00
+#SBATCH -A grp_vgupt140
 
 module purge
 module load mamba/latest
@@ -13,7 +14,6 @@ source activate erm_venv
 SEEDS=(40 41 42 43 44)
 
 cd ../
-pip install -r requirements.txt
 
 echo "==========================================="
 echo "Running ConvNeXt Base on NICO++ experiments"

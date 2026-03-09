@@ -3,7 +3,7 @@
 #SBATCH -G a100:1
 #SBATCH -c 18
 #SBATCH --mem 96G
-#SBATCH -p general
+#SBATCH --partition=public
 #SBATCH -t 0-09:00:00
 
 module purge
@@ -13,7 +13,6 @@ source activate erm_venv
 SEEDS=(40 41 42 43 44)
 
 cd ../
-pip install -r requirements.txt
 
 echo "==================================================="
 echo "Running Swin Transformer Base on NICO++ experiments"
