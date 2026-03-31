@@ -1,14 +1,18 @@
-import json
 import torch
 import random
 from PIL import Image
 from pathlib import Path
+from typing import Tuple, List
 from torchvision import transforms
-from typing import Tuple, List, Dict
 from torch.utils.data import Dataset, DataLoader
 
 
-class NICOPPDataset(Dataset):
+EXCLUDED_CONTEXTS = {"dim"}
+ALL_CONTEXTS = ["autumn", "dim", "grass", "outdoor", "rock", "water"]
+NUM_CLASSES = 60
+
+
+class NICODGDataset(Dataset):
     def __init__(self, image_paths: List[Path], labels: List[int], transform=None):
         assert len(image_paths) == len(labels)
         self.image_paths = image_paths
@@ -29,30 +33,45 @@ class NICOPPDataset(Dataset):
         return image, label
 
 
-def collect_all_images(data_root: Path) -> Tuple[List[Path], List[int], Dict[str, int]]:
-    mapping_file = data_root / "track_1" / "dg_label_id_mapping.json"
-    with open(mapping_file, "r") as f:
-        class_to_idx = json.load(f)
+def parse_annotations(
+    data_root: Path,
+) -> Tuple[List[Path], List[int], List[Path], List[int]]:
+    annotation_dir = data_root / "DG_Benchmark" / "NICO_DG_Benchmark_annotation"
+    image_dir = data_root / "DG_Benchmark" / "NICO_DG_Benchmark"
 
-    train_dir = data_root / "track_1" / "track_1" / "train"
+    contexts = [c for c in ALL_CONTEXTS if c not in EXCLUDED_CONTEXTS]
 
-    all_paths = []
-    all_labels = []
-    for context_dir in sorted(train_dir.iterdir()):
-        if not context_dir.is_dir():
-            continue
-        for label_dir in sorted(context_dir.iterdir()):
-            if not label_dir.is_dir():
-                continue
-            label_name = label_dir.name
-            if label_name not in class_to_idx:
-                continue
-            label_id = class_to_idx[label_name]
-            for img_path in sorted(label_dir.glob("*.jpg")):
-                all_paths.append(img_path)
-                all_labels.append(label_id)
+    train_paths = []
+    train_labels = []
+    test_paths = []
+    test_labels = []
 
-    return all_paths, all_labels, class_to_idx
+    for context in contexts:
+        for split in ["train", "test"]:
+            annotation_file = annotation_dir / f"{context}_{split}.txt"
+
+            with open(annotation_file, "r") as f:
+                for line in f:
+                    parts = line.strip().rsplit(maxsplit=1)
+                    if len(parts) != 2:
+                        continue
+
+                    rel_path = parts[0]
+                    class_id = int(parts[1])
+
+                    # Annotation paths start with "NICO_DG/"; strip and
+                    # prepend the actual image directory.
+                    rel_path = rel_path.replace("NICO_DG/", "", 1)
+                    img_path = image_dir / rel_path
+
+                    if split == "train":
+                        train_paths.append(img_path)
+                        train_labels.append(class_id)
+                    else:
+                        test_paths.append(img_path)
+                        test_labels.append(class_id)
+
+    return train_paths, train_labels, test_paths, test_labels
 
 
 def create_validation_splits(
@@ -62,15 +81,13 @@ def create_validation_splits(
     test_labels: List[int],
     num_samples_per_class: int,
     seed: int,
-    class_to_idx: Dict[str, int],
 ) -> Tuple[List[Path], List[int], List[Path], List[int]]:
     random.seed(seed)
-    num_classes = len(class_to_idx)
 
     # iid
     in_domain_val_paths = []
     in_domain_val_labels = []
-    for cls in range(num_classes):
+    for cls in range(NUM_CLASSES):
         class_indices = [i for i, l in enumerate(train_labels) if l == cls]
         if len(class_indices) < num_samples_per_class:
             print(
@@ -86,12 +103,15 @@ def create_validation_splits(
     # ood
     out_of_domain_val_paths = []
     out_of_domain_val_labels = []
-    for cls in range(num_classes):
+    for cls in range(NUM_CLASSES):
         class_indices = [i for i, l in enumerate(test_labels) if l == cls]
         if len(class_indices) == 0:
             print(f"Warning: class {cls} has no images in test set")
             continue
-        sampled_indices = random.choices(class_indices, k=num_samples_per_class)
+        if len(class_indices) < num_samples_per_class:
+            sampled_indices = random.choices(class_indices, k=num_samples_per_class)
+        else:
+            sampled_indices = random.sample(class_indices, num_samples_per_class)
         for i in sampled_indices:
             out_of_domain_val_paths.append(test_paths[i])
             out_of_domain_val_labels.append(test_labels[i])
@@ -104,7 +124,7 @@ def create_validation_splits(
     )
 
 
-def get_nico_pp_dataloaders(
+def get_nico_dg_dataloaders(
     data_root: str,
     batch_size: int,
     num_val_samples_per_class: int,
@@ -114,7 +134,7 @@ def get_nico_pp_dataloaders(
 ) -> Tuple[DataLoader, DataLoader, DataLoader, DataLoader]:
     data_root = Path(data_root)
 
-    all_paths, all_labels, class_to_idx = collect_all_images(data_root)
+    train_paths, train_labels, test_paths, test_labels = parse_annotations(data_root)
 
     data_transform = transforms.Compose(
         [
@@ -123,19 +143,6 @@ def get_nico_pp_dataloaders(
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
-
-    # 75/25 train-test split
-    combined = list(zip(all_paths, all_labels))
-    random.seed(rndm_seed)
-    random.shuffle(combined)
-    split_idx = int(len(combined) * 0.75)
-    train_pairs = combined[:split_idx]
-    test_pairs = combined[split_idx:]
-
-    train_paths = [p for p, _ in train_pairs]
-    train_labels = [l for _, l in train_pairs]
-    test_paths = [p for p, _ in test_pairs]
-    test_labels = [l for _, l in test_pairs]
 
     (
         in_domain_val_paths,
@@ -149,7 +156,6 @@ def get_nico_pp_dataloaders(
         test_labels=test_labels,
         num_samples_per_class=num_val_samples_per_class,
         seed=rndm_seed,
-        class_to_idx=class_to_idx,
     )
 
     in_domain_val_paths_set = set(in_domain_val_paths)
@@ -162,14 +168,14 @@ def get_nico_pp_dataloaders(
     train_paths = filtered_train_paths
     train_labels = filtered_train_labels
 
-    train_dataset = NICOPPDataset(train_paths, train_labels, transform=data_transform)
-    in_domain_val_dataset = NICOPPDataset(
+    train_dataset = NICODGDataset(train_paths, train_labels, transform=data_transform)
+    in_domain_val_dataset = NICODGDataset(
         in_domain_val_paths, in_domain_val_labels, transform=data_transform
     )
-    out_of_domain_val_dataset = NICOPPDataset(
+    out_of_domain_val_dataset = NICODGDataset(
         out_of_domain_val_paths, out_of_domain_val_labels, transform=data_transform
     )
-    test_dataset = NICOPPDataset(test_paths, test_labels, transform=data_transform)
+    test_dataset = NICODGDataset(test_paths, test_labels, transform=data_transform)
 
     use_pin_memory = torch.cuda.is_available()
 
@@ -202,7 +208,8 @@ def get_nico_pp_dataloaders(
         pin_memory=use_pin_memory,
     )
 
-    print("Dataset Statistics:")
+    excluded = ", ".join(sorted(EXCLUDED_CONTEXTS))
+    print(f"Dataset Statistics (NICO++ DG_Benchmark, excluded contexts: {excluded}):")
     print(f"  Train: {len(train_dataset)} images ({len(train_loader)} batches)")
     print(
         f"  In-Domain Validation: {len(in_domain_val_dataset)} images ({len(in_domain_val_loader)} batches)"
@@ -211,6 +218,6 @@ def get_nico_pp_dataloaders(
         f"  Out-of-Domain Validation: {len(out_of_domain_val_dataset)} images ({len(out_of_domain_val_loader)} batches)"
     )
     print(f"  Test: {len(test_dataset)} images ({len(test_loader)} batches)")
-    print(f"  Number of classes: {len(class_to_idx)}")
+    print(f"  Number of classes: {NUM_CLASSES}")
 
     return train_loader, in_domain_val_loader, out_of_domain_val_loader, test_loader

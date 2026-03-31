@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=erm_swin_nico_pp
+#SBATCH --job-name=erm_swin_nico_dg
 #SBATCH -G a100:1
 #SBATCH -c 18
 #SBATCH --mem 96G
@@ -22,7 +22,7 @@ for SEED in "${SEEDS[@]}"; do
     echo ""
     echo ">>> Running seed ${SEED}"
 
-    python train.py configs/nico_pp_swin_base.yaml --seed ${SEED}
+    python train.py configs/nico_dg_swin_base.yaml --seed ${SEED}
 
     if [ $? -eq 0 ]; then
         echo "    Completed seed ${SEED}"

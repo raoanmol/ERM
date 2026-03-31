@@ -3,13 +3,13 @@ from torch.utils.data import DataLoader
 from src.utils.config import DataConfig
 from src.data.bar_dataloader import get_bar_dataloaders
 from src.data.celeba_dataloader import get_celeba_dataloaders
-from src.data.nico_pp_dataloader import get_nico_pp_dataloaders
+from src.data.nico_dg_dataloader import get_nico_dg_dataloaders
 
 
 NUM_CLASSES = {
     "bar": 6,
     "celeba": 2,
-    "nico_pp": 60,
+    "nico_dg": 60,
 }
 
 
@@ -39,8 +39,8 @@ def get_dataloaders(
         loaders = get_celeba_dataloaders(
             target_attr=data_cfg.target_attr, **common_kwargs
         )
-    elif dataset == "nico_pp":
-        loaders = get_nico_pp_dataloaders(**common_kwargs)
+    elif dataset == "nico_dg":
+        loaders = get_nico_dg_dataloaders(**common_kwargs)
 
     num_classes = NUM_CLASSES[dataset]
     return (*loaders, num_classes)

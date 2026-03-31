@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=erm_resnet_nico_pp
+#SBATCH --job-name=erm_resnet_nico_dg
 #SBATCH -G a30:1
 #SBATCH -c 18
 #SBATCH --mem 96G
@@ -23,7 +23,7 @@ for SEED in "${SEEDS[@]}"; do
     echo ""
     echo ">>> Running seed ${SEED}"
 
-    python train.py configs/nico_pp_resnet18.yaml --seed ${SEED}
+    python train.py configs/nico_dg_resnet18.yaml --seed ${SEED}
 
     if [ $? -eq 0 ]; then
         echo "    Completed seed ${SEED}"

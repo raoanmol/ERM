@@ -20,7 +20,7 @@ All models use ImageNet-pretrained weights with the classification head replaced
 |---------|---------|-------------|
 | BAR (Biased Activity Recognition) | 6 | `bar` |
 | CelebA | 2 | `celeba` |
-| NICO++ | 60 | `nico_pp` |
+| NICO++ | 60 | `nico_dg` |
 
 Expected data directory structure:
 
@@ -33,10 +33,10 @@ data/
 │   ├── img_align_celeba/
 │   ├── list_attr_celeba.txt
 │   └── list_eval_partition.txt
-└── nico_pp/
-    └── track_1/
-        ├── dg_label_id_mapping.json
-        └── track_1/train/   # {context}/{class}/*.jpg
+└── NICO++/
+    └── DG_Benchmark/
+        ├── NICO_DG_Benchmark                # {context}/{class}/*.jpg
+        └── NICO_DG_Benchmark_annotation
 ```
 
 ## Setup
@@ -83,7 +83,7 @@ Each run produces a directory at `logs/{dataset}_{model}_seed{seed}/` containing
 │   │   ├── data_factory.py     # Unified data dispatch
 │   │   ├── bar_dataloader.py
 │   │   ├── celeba_dataloader.py
-│   │   └── nico_pp_dataloader.py
+│   │   └── nico_dg_dataloader.py
 │   ├── models/
 │   │   └── model_factory.py    # Model creation with registry
 │   ├── training/

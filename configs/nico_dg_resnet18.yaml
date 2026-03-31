@@ -2,15 +2,15 @@ seed: 42
 device: "auto"
 
 data:
-  dataset: "nico_pp"
-  data_root: "data/nico_pp"
+  dataset: "nico_dg"
+  data_root: "data/NICO++"
   batch_size: 64
-  num_val_samples_per_class: 37
+  num_val_samples_per_class: 26
   num_workers: 4
   image_size: 224
 
 model:
-  name: "efficientnet_b0"
+  name: "resnet18"
   pretrained: true
 
 training:

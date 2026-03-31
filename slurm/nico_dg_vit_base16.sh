@@ -1,11 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=erm_efficientnet_nico_pp
-#SBATCH -G a30:1
+#SBATCH --job-name=erm_vit_nico_dg
+#SBATCH -G a100:1
 #SBATCH -c 18
 #SBATCH --mem 96G
 #SBATCH --partition=public
-#SBATCH -t 0-04:30:00
-#SBATCH -A grp_vgupt140
+#SBATCH -t 0-09:00:00
 
 module purge
 module load mamba/latest
@@ -15,15 +14,15 @@ SEEDS=(40 41 42 43 44)
 
 cd ../
 
-echo "============================================="
-echo "Running EfficientNet-B0 on NICO++ experiments"
-echo "============================================="
+echo "========================================="
+echo "Running ViT-Base/16 on NICO++ experiments"
+echo "========================================="
 
 for SEED in "${SEEDS[@]}"; do
     echo ""
     echo ">>> Running seed ${SEED}"
 
-    python train.py configs/nico_pp_efficientnet_b0.yaml --seed ${SEED}
+    python train.py configs/nico_dg_vit_base16.yaml --seed ${SEED}
 
     if [ $? -eq 0 ]; then
         echo "    Completed seed ${SEED}"
